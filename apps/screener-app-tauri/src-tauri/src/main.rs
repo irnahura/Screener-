@@ -1639,8 +1639,8 @@ async fn main() {
                 info!("enterprise: hidden UI mode active, skipping startup app windows");
             } else if headless_startup {
                 info!("headless: starting with UI dormant; use the tray to open screener");
-            } else if !onboarding_store.is_completed {
-                let _ = ShowRewindWindow::Onboarding.show(&app.handle());
+            } else if cfg!(feature = "demo-home") {
+                let _ = ShowRewindWindow::Home { page: None }.show(&app.handle());
             } else if from_autostart {
                 info!("autostart: skipping Home window (background login launch)");
             } else {
