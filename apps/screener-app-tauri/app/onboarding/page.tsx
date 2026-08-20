@@ -6,27 +6,21 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import OnboardingLogin from "@/components/onboarding/login-gate";
 import AcquisitionStep from "@/components/onboarding/acquisition-step";
 import PermissionsStep from "@/components/onboarding/permissions-step";
 import TimelineChoice from "@/components/onboarding/timeline-choice";
 import EngineStartup from "@/components/onboarding/engine-startup";
-import PlanSelectionStep from "@/components/onboarding/plan-selection-step";
 import { useOnboarding } from "@/lib/hooks/use-onboarding";
 import { useManagedPolicy } from "@/lib/hooks/use-managed-policy";
 import { useSettings } from "@/lib/hooks/use-settings";
-import { EnterpriseLicensePrompt } from "@/components/enterprise-license-prompt";
 import posthog from "posthog-js";
 import { commands } from "@/lib/utils/tauri";
 import { onboardingFunnel } from "@/lib/analytics";
-import type { AppUser } from "@/lib/app-entitlement";
-import { readOnboardingCheckoutStatus } from "@/lib/onboarding-checkout-navigation";
 
-type SlideKey =
-  "login" | "acquisition" | "permissions" | "timeline" | "engine" | "plan";
+type SlideKey = "acquisition" | "permissions" | "timeline" | "engine";
 
 // One size for the whole flow. Per-slide sizes made the window jump on every
-// step, worst on "plan", which widened to 760 even though the content column is
+// step, worst on the former plan screen, which widened to 760 even though the content column is
 // capped at max-w-lg — 124px of dead margin per side — and was still 42px too
 // short to show the free-plan link. 680 is the tallest any slide previously
 // asked for (timeline), so every other step only gains slack: the permissions
@@ -41,15 +35,13 @@ const ONBOARDING_WINDOW_SIZE = { width: 500, height: 680 };
 // When shown, the timeline choice sits before "engine" so disableTimeline is
 // persisted before the engine spawns and reads it — no restart needed.
 const SLIDE_ORDER: SlideKey[] = [
-  "login",
   "acquisition",
   "permissions",
   "timeline",
   "engine",
-  "plan",
 ];
 
-// endowed progress: the bar first renders on permissions with login already
+// endowed progress: the bar first renders on permissions after local setup begins
 // counted done, so it always starts above zero. When the current step reports
 // sub-progress (e.g. one sub per permission grant), its segment splits so the
 // bar advances with every grant instead of stalling for the whole step.
@@ -117,14 +109,10 @@ const applyOnboardingWindowSize = async () => {
 
 export default function OnboardingPage() {
   const { toast } = useToast();
-  const [checkoutReturnStatus] = useState(() =>
-    typeof window === "undefined"
-      ? null
-      : readOnboardingCheckoutStatus(window.location.search),
-  );
-  const [currentSlide, setCurrentSlide] = useState<SlideKey>(() =>
-    checkoutReturnStatus ? "plan" : "login",
-  );
+  // The demo is local-first: onboarding never asks for an account or opens a
+  // hosted sign-in/sign-up page. Authentication can be added back later as an
+  // optional step without blocking the setup flow.
+  const [currentSlide, setCurrentSlide] = useState<SlideKey>("acquisition");
   const [isVisible, setIsVisible] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [permissionsProgress, setPermissionsProgress] = useState<{
@@ -137,19 +125,12 @@ export default function OnboardingPage() {
   );
   const { onboardingData, isLoading, completeOnboarding } = useOnboarding();
   const { settings, isSettingsLoaded } = useSettings();
-  const user = settings.user as AppUser | null | undefined;
   const completedForHiddenUiRef = React.useRef(false);
   const transitioningRef = React.useRef(false);
   const funnelStartedRef = React.useRef(false);
   const {
     isManagedDeployment,
     isManagedDeploymentResolved,
-    authenticationState,
-    authenticationError,
-    isManagedAuthenticated,
-    selectAuthenticationMethod,
-    submitLicenseKey,
-    policy: managedPolicy,
     isSettingLocked,
   } = useManagedPolicy();
   // This intervention is intentionally narrow: only a canonical "low" tier
@@ -172,32 +153,6 @@ export default function OnboardingPage() {
     settings.deviceTier === "high"
       ? settings.deviceTier
       : "unknown";
-  const needsOnboardingCheckout =
-    user?.has_payment_method !== true && user?.entitlement_source !== "manual";
-  const shouldShowPlanSelection =
-    !isManagedDeployment &&
-    (checkoutReturnStatus !== null || needsOnboardingCheckout);
-  // New accounts no longer receive the old cardless profile grant, so they
-  // resolve entitlement_source as "none" and enter checkout. Accounts that
-  // already hold a preserved manual grant keep that access without being
-  // forced to add a card. The previous card-ask experiment must not suppress
-  // checkout for an eligible new account.
-  // "plan" is the last slide, so auto-advancing onto it without a token traps
-  // the user in onboarding: PlanSelectionStep cannot open hosted checkout
-  // (it renders "sign in to continue"),
-  // and handleNextSlide stops calling completeOnboarding once a next slide
-  // exists. Someone who skipped sign-in would sit on /onboarding forever.
-  //
-  // This gates only the automatic walk out of the engine slide. The slide stays
-  // in visibleOrder — and so in the progress total and the restore mapping — so
-  // navigating to it directly still renders card capture. That distinction is
-  // load-bearing for the E2E suite: `onboarding-first-run` asserts the slide
-  // EXISTS and renders `onboarding-card-capture` via gotoSlide, while
-  // `onboarding-background-ai-tools` asserts setup FINISHES. Excluding the
-  // slide from visibleOrder instead would satisfy the second and break the
-  // first.
-  const canAdvanceIntoPlanSelection =
-    shouldShowPlanSelection && Boolean(user?.token);
   const visibleOrder = useMemo(
     () =>
       SLIDE_ORDER.filter(
@@ -208,10 +163,9 @@ export default function OnboardingPage() {
           // never came from, so the attribution this step exists to collect is
           // worse for having been asked.
           (s !== "acquisition" || !isManagedDeployment) &&
-          (s !== "timeline" || timelineChoiceVisible) &&
-          (s !== "plan" || shouldShowPlanSelection),
+          (s !== "timeline" || timelineChoiceVisible)
       ),
-    [isManagedDeployment, shouldShowPlanSelection, timelineChoiceVisible],
+    [isManagedDeployment, timelineChoiceVisible],
   );
   // Read by the hydration-gated restore effect below. Assigned during render,
   // per the ref-mirror rule in CLAUDE.md.
@@ -229,29 +183,16 @@ export default function OnboardingPage() {
       await loadOnboardingStatus();
       const { onboardingData } = useOnboarding.getState();
 
-      // Hosted checkout temporarily replaces this webview's local document.
-      // Its explicit complete/cancel return always resumes the plan controller,
-      // even if a stale persisted step predates the outbound navigation.
-      if (checkoutReturnStatus && !isManagedDeployment) {
-        try {
-          await commands.setOnboardingStep("plan");
-        } catch {
-          // non-critical: the in-memory restore below is enough for this run
-        }
-        setCurrentSlide("plan");
-        return;
-      }
-
       if (onboardingData.currentStep && !onboardingData.isCompleted) {
         const step = onboardingData.currentStep as string;
         // Map old and new step names
         const stepMap: Record<string, SlideKey> = {
-          login: "login",
+          login: "acquisition",
           acquisition: "acquisition",
           permissions: "permissions",
           timeline: "timeline",
           engine: "engine",
-          plan: "plan",
+          plan: "engine",
           // Native Rust now connects detected AI tools in the background, and
           // the goal/dashboard slide is gone: setup no longer asks the user to
           // declare intent before anything has been observed. Saved installs
@@ -265,8 +206,8 @@ export default function OnboardingPage() {
           encrypt: "engine",
           read: "engine",
           shortcut: "engine",
-          welcome: "login",
-          intro: "login",
+          welcome: "acquisition",
+          intro: "acquisition",
           usecases: "permissions",
           status: "permissions",
           setup: "permissions",
@@ -281,8 +222,7 @@ export default function OnboardingPage() {
                 // still asked, resumes at the step that follows it rather than
                 // at the engine: permissions still have to be granted.
                 "permissions"
-              : (mapped === "timeline" && !timelineChoiceVisibleRef.current) ||
-                  (mapped === "plan" && !shouldShowPlanSelection)
+              : mapped === "timeline" && !timelineChoiceVisibleRef.current
                 ? "engine"
                 : mapped;
           setCurrentSlide(mappedSlide);
@@ -291,11 +231,9 @@ export default function OnboardingPage() {
     };
     init();
   }, [
-    checkoutReturnStatus,
     isManagedDeployment,
     isManagedDeploymentResolved,
     isSettingsLoaded,
-    shouldShowPlanSelection,
   ]);
 
   useEffect(() => {
@@ -358,12 +296,7 @@ export default function OnboardingPage() {
     transitioningRef.current = true;
     setIsTransitioning(true);
 
-    // The login gate owns this event because only it can distinguish a fresh
-    // logged-out -> logged-in transition from resuming a persisted session.
-    // Capturing it here as well duplicates every fresh-login completion.
-    if (currentSlide !== "login") {
-      posthog.capture(`onboarding_${currentSlide}_completed`);
-    }
+    posthog.capture(`onboarding_${currentSlide}_completed`);
     const currentIdx = SLIDE_ORDER.indexOf(currentSlide);
     posthog.capture("onboarding_step_reached", {
       step_name: `${currentSlide}_completed`,
@@ -417,12 +350,9 @@ export default function OnboardingPage() {
 
     // Walk SLIDE_ORDER (never the filtered list) so the index stays valid even
     // for a slide that policy hides, then land on the next visible slide.
-    // Consumer onboarding ends on plan selection after the engine is ready.
-    // Managed deployments skip that consumer purchase surface.
-    const nextSlide = SLIDE_ORDER.slice(currentIdx + 1).find(
-      (s) =>
-        visibleOrder.includes(s) &&
-        (s !== "plan" || canAdvanceIntoPlanSelection),
+    // The local demo completes after the engine is ready.
+    const nextSlide = SLIDE_ORDER.slice(currentIdx + 1).find((s) =>
+      visibleOrder.includes(s),
     );
     if (!nextSlide) {
       await completeOnboarding({ method: "setup_finished" });
@@ -444,7 +374,6 @@ export default function OnboardingPage() {
       setIsTransitioning(false);
     }, 300);
   }, [
-    canAdvanceIntoPlanSelection,
     completeOnboarding,
     currentSlide,
     deviceTierForAnalytics,
@@ -452,27 +381,6 @@ export default function OnboardingPage() {
     timelineChoiceLocked,
     timelineChoiceVisible,
     visibleOrder,
-  ]);
-
-  // Enterprise authentication owns the onboarding login step. Existing saved
-  // keys and accepted workspace accounts advance silently once verified.
-  useEffect(() => {
-    if (
-      currentSlide === "login" &&
-      isManagedDeploymentResolved &&
-      isManagedDeployment &&
-      isManagedAuthenticated &&
-      !isTransitioning
-    ) {
-      void handleNextSlide();
-    }
-  }, [
-    currentSlide,
-    isManagedDeployment,
-    isManagedDeploymentResolved,
-    isManagedAuthenticated,
-    isTransitioning,
-    handleNextSlide,
   ]);
 
   if (isLoading || !isSettingsLoaded || !isManagedDeploymentResolved) {
@@ -499,59 +407,11 @@ export default function OnboardingPage() {
             isVisible ? "opacity-100" : "opacity-0"
           }`}
         >
-          {currentSlide !== "login" && (
-            <EndowedProgress
-              step={Math.max(1, visibleOrder.indexOf(currentSlide) + 1)}
-              total={visibleOrder.length}
-              sub={currentSlide === "permissions" ? permissionsProgress : null}
-            />
-          )}
-          {currentSlide === "login" &&
-            (isManagedDeployment ? (
-              authenticationState === "license_key" ? (
-                <div className="mx-auto w-full max-w-sm">
-                  <h2 className="mb-1 text-lg font-semibold">
-                    activate this device
-                  </h2>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    enter the enterprise key provided by your administrator
-                  </p>
-                  <EnterpriseLicensePrompt
-                    embedded
-                    onSubmit={submitLicenseKey}
-                    onSignIn={() => selectAuthenticationMethod("account")}
-                  />
-                </div>
-              ) : authenticationState === "choice" ||
-                authenticationState === "account" ? (
-                <div className="flex flex-col items-center">
-                  {authenticationError && (
-                    <p className="mb-3 max-w-[360px] text-center font-mono text-[11px] text-destructive">
-                      {authenticationError}
-                    </p>
-                  )}
-                  <OnboardingLogin
-                    handleNextSlide={handleNextSlide}
-                    suppressAutoAdvance
-                  />
-                  {!managedPolicy?.requireAccountLogin && (
-                    <button
-                      type="button"
-                      onClick={() => selectAuthenticationMethod("license_key")}
-                      className="mt-3 font-mono text-xs text-muted-foreground/70 underline underline-offset-4 decoration-muted-foreground/40 transition-colors hover:text-foreground hover:decoration-foreground"
-                    >
-                      use enterprise key
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex min-h-[400px] items-center justify-center">
-                  <div className="h-6 w-6 animate-spin rounded-full border border-foreground border-t-transparent" />
-                </div>
-              )
-            ) : (
-              <OnboardingLogin handleNextSlide={handleNextSlide} />
-            ))}
+          <EndowedProgress
+            step={Math.max(1, visibleOrder.indexOf(currentSlide) + 1)}
+            total={visibleOrder.length}
+            sub={currentSlide === "permissions" ? permissionsProgress : null}
+          />
           {currentSlide === "acquisition" && (
             <AcquisitionStep handleNextSlide={handleNextSlide} />
           )}
@@ -566,9 +426,6 @@ export default function OnboardingPage() {
           )}
           {currentSlide === "engine" && (
             <EngineStartup handleNextSlide={handleNextSlide} />
-          )}
-          {currentSlide === "plan" && (
-            <PlanSelectionStep handleNextSlide={handleNextSlide} />
           )}
         </div>
       </div>
