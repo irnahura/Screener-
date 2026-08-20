@@ -62,7 +62,7 @@ before starting the app, and stop capture when it is not needed.
 
 ## Demo 
 
-[demo](https://github.com/irnahura/Screener-/releases/tag/v2.6.38-demo-home) use this for demo the other versions have some issues with them 
+[demo](https://github.com/irnahura/Screener-/releases/tag/v2.6.38-demo-home-direct) use this for demo the other versions have some issues with them 
 
 ## MVP limitations
 
