@@ -12,12 +12,9 @@ import { SettingsProvider } from "@/lib/hooks/use-settings";
 import { ManagedPolicyProvider } from "@/lib/hooks/use-managed-policy";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PermissionMonitorProvider } from "@/lib/hooks/use-permission-monitor";
-import { AuthGuard } from "@/lib/auth-guard";
 import { forwardRef } from "react";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { useUpdateListener } from "@/components/update-banner";
-import { AppEntitlementGate } from "@/components/app-entitlement-gate";
-import { DeeplinkHandler } from "@/components/deeplink-handler";
 import { LiveViewOnboardingFollowUp } from "@/components/live-view-onboarding-follow-up";
 import { usePathname } from "next/navigation";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -56,10 +53,6 @@ export const Providers = forwardRef<
   // RIOM is local-first: retain the provider for compatibility with existing
   // components, but never initialize PostHog or send browser telemetry.
   const posthogReady = false;
-  // The deep-link handler (which turns the screener:// login callback into a
-  // loadUser call) MUST stay mounted outside the entitlement gate. Otherwise the
-  // "sign in required" screen unmounts it and the login token is dropped, so
-  // sign-in can never complete and the user is locked out for good.
   const pathname = usePathname();
   const isOverlay =
     pathname === "/shortcut-reminder" || pathname === "/notification-inbox";
@@ -80,28 +73,25 @@ export const Providers = forwardRef<
           <QueryClientProvider client={queryClient}>
             <SettingsProvider>
               <ManagedPolicyProvider>
-                <AuthGuard>
-                  <ThemeProvider
-                    defaultTheme="system"
-                    storageKey="screener-ui-theme"
-                  >
-                    <ChangelogDialogProvider>
-                      <PermissionMonitorProvider>
-                        <UpdateListenerMount />
-                        <PostHogProvider client={posthog}>
-                          {mounted ? (
-                            <>
-                              <DesktopRemoteControl enabled={posthogReady} />
-                              {!isOverlay && <DeeplinkHandler />}
-                              {!isOverlay && <LiveViewOnboardingFollowUp />}
-                              <AppEntitlementGate>{children}</AppEntitlementGate>
-                            </>
-                          ) : null}
-                        </PostHogProvider>
-                      </PermissionMonitorProvider>
-                    </ChangelogDialogProvider>
-                  </ThemeProvider>
-                </AuthGuard>
+                <ThemeProvider
+                  defaultTheme="system"
+                  storageKey="screener-ui-theme"
+                >
+                  <ChangelogDialogProvider>
+                    <PermissionMonitorProvider>
+                      <UpdateListenerMount />
+                      <PostHogProvider client={posthog}>
+                        {mounted ? (
+                          <>
+                            <DesktopRemoteControl enabled={posthogReady} />
+                            {!isOverlay && <LiveViewOnboardingFollowUp />}
+                            {children}
+                          </>
+                        ) : null}
+                      </PostHogProvider>
+                    </PermissionMonitorProvider>
+                  </ChangelogDialogProvider>
+                </ThemeProvider>
               </ManagedPolicyProvider>
             </SettingsProvider>
           </QueryClientProvider>
