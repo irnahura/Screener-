@@ -5,6 +5,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import AcquisitionStep from "@/components/onboarding/acquisition-step";
 import PermissionsStep from "@/components/onboarding/permissions-step";
@@ -108,6 +109,22 @@ const applyOnboardingWindowSize = async () => {
 };
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const isWebDemo =
+    typeof window !== "undefined" &&
+    Boolean(
+      (window as Window & { __SCREENER_WEB_DEMO__?: boolean })
+        .__SCREENER_WEB_DEMO__,
+    );
+
+  // Keep the onboarding implementation for future native flows, but never
+  // make the browser demo stop there. Demo users enter the working home app.
+  useEffect(() => {
+    if (isWebDemo) router.replace("/home");
+  }, [isWebDemo, router]);
+
+  if (isWebDemo) return null;
+
   const { toast } = useToast();
   // The demo is local-first: onboarding never asks for an account or opens a
   // hosted sign-in/sign-up page. Authentication can be added back later as an
