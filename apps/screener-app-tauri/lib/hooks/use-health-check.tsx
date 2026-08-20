@@ -10,6 +10,7 @@ import {
   getApiBaseUrl,
   redactApiUrlForLogs,
 } from "@/lib/api";
+import { isTauriRuntime } from "@/lib/utils/tauri-runtime";
 
 interface AudioPipelineHealth {
   chunks_sent: number;
@@ -202,6 +203,10 @@ function errorHealth(message: string): HealthCheckResponse {
 }
 
 export async function fetchHealth(): Promise<void> {
+  if (!isTauriRuntime()) {
+    emitSnapshot({ isLoading: false, isServerDown: true });
+    return;
+  }
   closeHealthSocket(1000, "refreshing");
 
   try {

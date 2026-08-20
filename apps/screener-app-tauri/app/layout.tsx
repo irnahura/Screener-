@@ -248,6 +248,35 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // The static demo runs in a regular browser, where Tauri's
+                // injected internals do not exist. Provide the small subset
+                // required by the shared UI so native-only calls fail
+                // gracefully instead of crashing during module startup.
+                window.__SCREENER_WEB_DEMO__ = true;
+                if (!window.__TAURI_INTERNALS__) {
+                  window.__TAURI_INTERNALS__ = {
+                    metadata: {
+                      currentWindow: { label: 'web-demo' },
+                      currentWebview: { label: 'web-demo' }
+                    },
+                    invoke: function(command) {
+                      return Promise.reject(new Error('[web demo] Native command unavailable: ' + command));
+                    }
+                  };
+                }
+                window.__TAURI_OS_PLUGIN_INTERNALS__ = {
+                  platform: 'windows',
+                  os_type: 'windows',
+                  family: 'windows',
+                  arch: 'x86_64',
+                  version: 'web-demo',
+                  eol: '\\r\\n',
+                  exe_extension: '.exe'
+                };
+                window.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
+                  unregisterListener: function() {}
+                };
+
                 // Apply theme to prevent flash and ensure sidebar/main content consistency.
                 // Priority: stored preference > system preference
                 try {

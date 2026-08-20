@@ -6,6 +6,7 @@
 export function isTauriRuntime(): boolean {
 	return (
 		typeof window !== "undefined" &&
+		!(window as Window & { __SCREENER_WEB_DEMO__?: boolean }).__SCREENER_WEB_DEMO__ &&
 		typeof (window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
 			"undefined"
 	);

@@ -9,8 +9,18 @@ const root = join(import.meta.dir, "..", "out");
 const port = Number(process.env.SCREENER_WEB_PORT ?? 1420);
 
 if (!existsSync(join(root, "index.html"))) {
-	console.error("[dev-static] apps/screener-app-tauri/out is missing; run `bun run build` first");
-	process.exit(1);
+	console.log("[dev-static] frontend export is missing; building it before starting the demo...");
+	const build = Bun.spawn(["bun", "run", "build"], {
+		cwd: join(import.meta.dir, ".."),
+		stdin: "inherit",
+		stdout: "inherit",
+		stderr: "inherit",
+	});
+	const exitCode = await build.exited;
+	if (exitCode !== 0 || !existsSync(join(root, "index.html"))) {
+		console.error("[dev-static] frontend build failed; the demo server was not started");
+		process.exit(exitCode || 1);
+	}
 }
 
 const contentTypes: Record<string, string> = {
