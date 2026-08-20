@@ -60,8 +60,10 @@ Captured frames, extracted text, and metadata remain on the local machine in
 screener's SQLite data directory. Review the operating-system capture permissions
 before starting the app, and stop capture when it is not needed.
 
+## Demo 
 
 [demo](https://github.com/irnahura/Screener-/releases/tag/v2.6.38-demo-home) use this for demo the other versions have some issues with them 
+
 ## MVP limitations
 
 Screener is currently a native desktop MVP. Platform capture and OCR capabilities
