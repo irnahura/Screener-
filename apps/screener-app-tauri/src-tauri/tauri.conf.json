@@ -1,0 +1,124 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "screener - Development",
+  "identifier": "screenpi.pe.dev",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:1420"
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Mediar, Inc.",
+    "category": "DeveloperTool",
+    "shortDescription": "24/7 memory for your desktop",
+    "longDescription": "24/7 memory for your desktop. 100% local. You own your data.",
+    "copyright": "",
+    "targets": [
+      "app",
+      "dmg",
+      "deb",
+      "appimage",
+      "nsis"
+    ],
+    "externalBin": [],
+    "icon": [
+      "icons/dev/32x32.png",
+      "icons/dev/128x128.png",
+      "icons/dev/128x128@2x.png",
+      "icons/dev/256x256.png",
+      "icons/dev/512x512.png",
+      "icons/dev/1024x1024.png",
+      "icons/dev/icon.icns",
+      "icons/dev/icon.ico",
+      "icons/screener-logo-tray-failed.png",
+      "icons/screener-logo-tray-black.png"
+    ],
+    "resources": [
+      "assets/*",
+      "PermissionFlow_PermissionFlow.bundle"
+    ],
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [],
+      "pubkey": ""
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "screener"
+        ]
+      },
+      "mobile": [
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/auth"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/stripe-connect"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/purchase-successful"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/settings"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/changelog"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/onboarding"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/status"
+          ]
+        }
+      ]
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "trayIcon": {
+      "id": "screener_main",
+      "iconPath": "assets/screener-logo-tray-white.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": true
+    },
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$HOME/.screener/**"
+        ]
+      },
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  }
+}

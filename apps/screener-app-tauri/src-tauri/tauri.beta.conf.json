@@ -1,0 +1,131 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "screener beta",
+  "identifier": "screenpi.pe.beta",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3000"
+  },
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "active": true,
+    "publisher": "Mediar, Inc.",
+    "category": "DeveloperTool",
+    "shortDescription": "24/7 memory for your desktop",
+    "longDescription": "24/7 memory for your desktop. 100% local. You own your data.",
+    "copyright": "",
+    "targets": [
+      "app",
+      "dmg",
+      "deb",
+      "appimage",
+      "nsis"
+    ],
+    "externalBin": [
+      "bun"
+    ],
+    "icon": [
+      "icons/beta/32x32.png",
+      "icons/beta/128x128.png",
+      "icons/beta/128x128@2x.png",
+      "icons/beta/256x256.png",
+      "icons/beta/512x512.png",
+      "icons/beta/1024x1024.png",
+      "icons/beta/icon.icns",
+      "icons/beta/icon.ico",
+      "icons/screener-logo-tray-failed.png",
+      "icons/screener-logo-tray-beta.png"
+    ],
+    "resources": [
+      "assets/*",
+      "PermissionFlow_PermissionFlow.bundle"
+    ],
+    "macOS": {
+      "entitlements": "entitlements.plist",
+      "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "endpoints": [
+        "https://screener.com/api/app-update/beta/{{target}}-{{arch}}/{{current_version}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyQjQ2RkQzMUNBOUFDMTcKUldRWHJLa2MwMiswSWl3RlBGUW5zYUE0Zm0vNFFRRTltNUZZTUVxR2FxUDNtSWdUSHgyL3JNcmcK"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "screener-beta"
+        ]
+      },
+      "mobile": [
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/auth"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/stripe-connect"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/purchase-successful"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/settings"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/changelog"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/onboarding"
+          ]
+        },
+        {
+          "host": "screener.com",
+          "pathPrefix": [
+            "/status"
+          ]
+        }
+      ]
+    }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "trayIcon": {
+      "id": "screener_main",
+      "iconPath": "assets/screener-logo-tray-white.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": true
+    },
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$HOME/.screener/**"
+        ]
+      },
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  }
+}

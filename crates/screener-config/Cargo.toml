@@ -1,0 +1,28 @@
+[package]
+name = "screener-config"
+version.workspace = true
+authors.workspace = true
+description = "Shared recording configuration for screener (app, CLI, and engine)"
+repository.workspace = true
+license-file.workspace = true
+edition.workspace = true
+
+[dependencies]
+# Runtime CPU-feature detection (has_avx2) for the engine safety checks in
+# defaults.rs — whisper/qwen3 are AVX2-compiled on x64. NOT screener-core:
+# that would be a package cycle (core → screener-secrets → config).
+screener-cpu-features = { path = "../screener-cpu-features" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+dirs = { workspace = true }
+sysinfo = { workspace = true }
+specta = { workspace = true, optional = true }
+
+[features]
+default = []
+specta = ["dep:specta"]
+
+[dev-dependencies]
+serde_json = { workspace = true }
+tempfile = { workspace = true }

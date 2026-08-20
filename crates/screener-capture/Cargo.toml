@@ -1,0 +1,27 @@
+[package]
+name = "screener-capture"
+version = "0.1.0"
+edition = "2021"
+description = "Paired screenshot + accessibility-tree capture, persisted to the screener DB. Shared by the engine binary and the SDK."
+license-file = { workspace = true }
+
+[dependencies]
+screener-a11y = { path = "../screener-a11y" }
+screener-core = { path = "../screener-core", default-features = false, features = ["security"] }
+screener-db = { path = "../screener-db" }
+screener-screen = { path = "../screener-screen" }
+
+anyhow = { workspace = true }
+chrono = { workspace = true }
+image = { workspace = true }
+once_cell = { workspace = true }
+regex = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+# Process-CPU (getrusage) measurement in the ocr_gate_ab example.
+libc = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true }
