@@ -1,13 +1,13 @@
-# RIOM
+# SCREENER
 
-RIOM is a local-first desktop activity journal: it helps you remember what you
-have seen on your computer. While recording is enabled, RIOM observes screen
+SCREENER is a local-first desktop activity journal: it helps you remember what you
+have seen on your computer. While recording is enabled, SCREENER observes screen
 changes, optionally extracts visible text, and turns that activity into a
 searchable local timeline.
 
 The central idea is simple: your computer already contains the context you
 need, but that context is usually scattered across windows and lost as soon as
-you move on. RIOM keeps a private, time-ordered record so you can revisit an
+you move on. SCREENER keeps a private, time-ordered record so you can revisit an
 event, find text from something you saw, and understand what was happening at a
 particular point in time.
 
@@ -53,7 +53,7 @@ The repository is organized as a Rust workspace plus a Tauri desktop client:
 
 ## Privacy model
 
-RIOM is designed around local ownership. Captured frames, extracted text, and
+SCREENER is designed around local ownership. Captured frames, extracted text, and
 metadata are written to the local machine and are used by the local desktop
 app. Recording is explicit and controllable, and the app includes settings for
 capture, privacy, storage, and permissions.
@@ -64,7 +64,7 @@ your workflow, and pause or stop recording whenever capture is not appropriate.
 
 ## Current scope
 
-RIOM is currently a native desktop MVP. Capture and OCR/accessibility behavior
+SCREENER is currently a native desktop MVP. Capture and OCR/accessibility behavior
 varies by operating system and requires the relevant permissions. Audio,
 cloud-sync workflows, browser extensions, agents, and release infrastructure
 are not part of the MVP’s core promise.
@@ -123,7 +123,7 @@ uncommitted.
 
 ## Project status and lineage
 
-This repository is an independent RIOM/Screener implementation. It draws
+This repository is an independent Screener implementation. It draws
 product and UX inspiration from [Retrace](https://github.com/haseab/retrace),
 [Windrecorder](https://github.com/yuka-friends/Windrecorder), and
 [DeskMate](https://github.com/zhaohb/deskmate). Its historical lineage is
